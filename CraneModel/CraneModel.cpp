@@ -10,7 +10,7 @@ namespace crane3d
     static constexpr double mc = 1;
     static constexpr double mw = 1.155;
     static constexpr double ms = 2.20;
-    static constexpr double g = 9.81;
+    static constexpr double g = 9.81; // gravity constant, 9.81m/s^2
     static constexpr double Tx = 100; // friction
     static constexpr double Ty = 82;
     static constexpr double Tz = 75;
@@ -139,4 +139,38 @@ namespace crane3d
         return d;
     }
 
+    //////////////////////////////////////////////////////////////////////
+
+    Model2::Model2()
+    {
+    }
+
+    void Model2::Update(double deltaTime, double Frail, double Fcart, double Fline)
+    {
+        double sinA = sin(Alfa), cosA = cos(Alfa);
+        double sinB = sin(Beta), cosB = cos(Beta);
+
+        S = Fline - Tr;
+        double Sx = S * sinA * sinB;
+        double Sy = S * cosA;
+        double Sz = -S * sinA * cosB;
+
+        // time derivative - velocity
+        // second derivative - acceleration
+
+        // second derivates
+        double lineNetAccel = LineNetAccel(Fline);
+        double aX = -lineNetAccel * sinA * sinB;
+        double aY = -lineNetAccel * cosA;
+        double aZ = lineNetAccel * sinA * cosB - g;
+
+        double aXw = RailNetAccel(Frail) + RailAccel(Frail)*lineNetAccel * sinA * sinB;
+        double aYw = CartNetAccel(Fcart) + CartAccel(Fcart)*lineNetAccel * cosA;
+
+        // initial state
+        double x1 = Yw;
+        double x2 = Yw;
+    }
+
+    //////////////////////////////////////////////////////////////////////
 }
