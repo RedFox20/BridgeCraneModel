@@ -1,4 +1,4 @@
-#include "CraneModel.h"
+﻿#include "CraneModel.h"
 #include <cmath>
 
 namespace crane3d
@@ -29,12 +29,12 @@ namespace crane3d
     static constexpr double Tsy = 7.5 / mw;
     static constexpr double Tsz = 10 / mc;
 
-    Model::Model(const SimulationState& initialState) : S{initialState}
+    ModelOld::ModelOld(const SimulationState& initialState) : S{initialState}
     {
         S.ALFA = (3.1415926 / 2) - initialState.ALFA; // Rotate 180 deg
     }
 
-    SimulationState Model::Get() const
+    SimulationState ModelOld::Get() const
     {
         SimulationState state = S;
         state.ALFA = (3.1415926 / 2) - S.ALFA; // Rotate 180 deg
@@ -49,7 +49,7 @@ namespace crane3d
         return 0;
     }
     
-    SimulationState Model::GetDerivative(double Fx, double Fy, double Fr) const
+    SimulationState ModelOld::GetDerivative(double Fx, double Fy, double Fr) const
     {
         const double RR = S.Rstale;
 
@@ -141,35 +141,59 @@ namespace crane3d
 
     //////////////////////////////////////////////////////////////////////
 
-    Model2::Model2()
+    Model::Model()
     {
+		
     }
 
-    void Model2::Update(double deltaTime, double Frail, double Fcart, double Fline)
+    void Model::Update(double deltaTime, const ModelState& s, double Frail, double Fcart, double Fline)
     {
         double sinA = sin(Alfa), cosA = cos(Alfa);
         double sinB = sin(Beta), cosB = cos(Beta);
 
         S = Fline - Tr;
-        double Sx = S * sinA * sinB;
-        double Sy = S * cosA;
-        double Sz = -S * sinA * cosB;
+		// second derivates
+		double lineNetAccel = LineNetAccel(Fline);
+		double aX = -lineNetAccel * sinA * sinB;
+		double aY = -lineNetAccel * cosA;
+		double aZ = lineNetAccel * sinA * cosB - g;
+
+		double aXw = RailNetAccel(Frail) + RailAccel(Frail)*lineNetAccel * sinA * sinB;
+		double aYw = CartNetAccel(Fcart) + CartAccel(Fcart)*lineNetAccel * cosA;
 
         // time derivative - velocity
         // second derivative - acceleration
 
-        // second derivates
-        double lineNetAccel = LineNetAccel(Fline);
-        double aX = -lineNetAccel * sinA * sinB;
-        double aY = -lineNetAccel * cosA;
-        double aZ = lineNetAccel * sinA * cosB - g;
+		double N1 = CartNetAccel(Fcart);
+		double N2 = RailNetAccel(Frail);
+		double N3 = LineNetAccel(Fline);
 
-        double aXw = RailNetAccel(Frail) + RailAccel(Frail)*lineNetAccel * sinA * sinB;
-        double aYw = CartNetAccel(Fcart) + CartAccel(Fcart)*lineNetAccel * cosA;
+		double μ1 = PayloadCartRatio;
+		double μ2 = PayloadRailCartRatio;
 
-        // initial state
-        double x1 = Yw;
-        double x2 = Yw;
+		double s5 = sin(s.x5);
+		double s7 = sin(s.x7);
+
+		double c5 = cos(s.x5);
+		double c7 = cos(s.x7);
+
+		double V5 = c5 * s5*s.x8*s.x8*s.x9 - 2 * s.x10*s.x6 + g*c5*c7;
+		double V6 = 2 * s.x8*(c5*s.x6*s.x9 + s5 * s.x10) + g*s7;
+		double V7 = s5 * s5*s.x8*s.x8*s.x9 + g * s5*c7 + s.x6*s.x6*s.x9;
+
+		ModelState d;
+		d.x1 = s.x2;
+		d.x2 = N1 + μ1 * c5 * N3;
+		d.x3 = s.x4;
+    	d.x4 = N2 + μ2 * s5 * s7 * N3;
+		d.x5 = s.x6;
+		d.x6 = (s5 * N1 - c5 * s7 * N2 + (μ1 - μ2 * s7*s7) * c5*s5*N3 * V5) / s.x9;
+		d.x7 = s.x8;
+		d.x8 = -(c7*N2 + μ2 * s5*c7*s7*N3 + V6) / (s5*s.x9);
+		d.x9 = s.x10;
+		d.x10 = -c5 * N1 - s5 * s7*N2 - (1 + μ1 * c5*c5 + μ2 * s5*s5*s7*s7)*N3 + V7;
+
+
     }
 
     //////////////////////////////////////////////////////////////////////

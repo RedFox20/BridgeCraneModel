@@ -19,13 +19,13 @@ namespace crane3d
         double Rstale = 0.0;
     };
 
-    class Model
+    class ModelOld
     {
         SimulationState S;
 
     public:
 
-        explicit Model(const SimulationState& initialState);
+        explicit ModelOld(const SimulationState& initialState);
 
         SimulationState Get() const;
 
@@ -42,18 +42,25 @@ namespace crane3d
     /**
      * NEW model state passed to update
      */
-    struct ModelState
+    struct ModelParameters
     {
-        double Alfa; // α pendulum measured alfa angle
-        double Beta; // β pendulum measured beta angle
+        double Alfa = 0.0; // α pendulum measured alfa angle
+        double Beta = 0.0; // β pendulum measured beta angle
 
-        double LiftLine; // R new lift-line length
-        double OffsetX;  // Xw distance of the rail with the cart from the center of the construction frame
-        double OffsetY;  // Yw distance of the cart from the center of the rail
+        double LiftLine = 0.0; // R new lift-line length
+        double OffsetX = 0.0;  // Xw distance of the rail with the cart from the center of the construction frame
+        double OffsetY = 0.0;  // Yw distance of the cart from the center of the rail
     };
 
+	struct ModelState
+	{
+		double x1 = 0.0, x2 = 0.0, x3 = 0.0, x4 = 0.0, x5 = 0.0;
+		double x6 = 0.0, x7 = 0.0, x8 = 0.0, x9 = 0.0, x10 = 0.0;
 
-    class Model2
+		ModelState() = default;
+	};
+
+    class Model
     {
         static constexpr double Mpayload = 1.000; // Mc mass of the payload
         static constexpr double Mcart    = 1.155; // Mw mass of the cart
@@ -83,47 +90,51 @@ namespace crane3d
 
     public:
 
-        Model2();
-
-        // μ1 = Mc / Mw
-        static constexpr double PayloadCartRatio = Mpayload / Mcart;
-        // μ2 = Mc / (Mw + Ms)
-        static constexpr double PayloadRailCartRatio = Mpayload / Mrailcart;
-
-        // u1 = Fy / Mw
-        // u1 = Fcart / Mcart
-        static double CartAccel(double Fcart) { return Fcart / Mcart; }
-        // u2 = Fx / (Mw + Mc)
-        // u2 = Frail / Mcartpayload
-        static double RailAccel(double Frail) { return Frail / Mcartpayload; }
-        // u3 = Fr / Mc
-        // u3 = Fline / Mpayload 
-        static double LineAccel(double Fline) { return Fline / Mpayload; }
-
-        // T1 = Ty / Mw
-        static constexpr double CartFrictionAccel = Ty / Mcart;
-        // T2 = Tx / (Mw + Mc)
-        static constexpr double RailFrictionAccel = Tx / Mcartpayload;
-        // T3 = Tr / Mc
-        static constexpr double LineFrictionAccel = Tr / Mpayload;
-
-        // N1 = u1 - T1
-        static double CartNetAccel(double Fcart) { return CartAccel(Fcart) - CartFrictionAccel; }
-        // N2 = u2 - T2
-        static double RailNetAccel(double Frail) { return RailAccel(Frail) - RailFrictionAccel; }
-        // N3 = u3 - T3
-        static double LineNetAccel(double Fline) { return LineAccel(Fline) - LineFrictionAccel; }
-
-        // s = S / Mc
-        static double LiftReactionAccel(double Sline) { return Sline / Mpayload; }
+        Model();
 
         /**
          * @param deltaTime Time since last update
+         * @param s current state of the model
          * @param Frail force driving the rail with cart (Fx)
          * @param Fcart force driving the cart along the rail (Fy)
          * @param Fline force controlling the length of the lift-line (Fr)
          */
-        void Update(double deltaTime, double Frail, double Fcart, double Fline);
+        void Update(double deltaTime, const ModelState& s, double Frail, double Fcart, double Fline);
+
+    private:
+
+		// μ1 = Mc / Mw
+		static constexpr double PayloadCartRatio = Mpayload / Mcart;
+		// μ2 = Mc / (Mw + Ms)
+		static constexpr double PayloadRailCartRatio = Mpayload / Mrailcart;
+
+		// u1 = Fy / Mw
+		// u1 = Fcart / Mcart
+		static double CartAccel(double Fcart) { return Fcart / Mcart; }
+		// u2 = Fx / (Mw + Mc)
+		// u2 = Frail / Mcartpayload
+		static double RailAccel(double Frail) { return Frail / Mcartpayload; }
+		// u3 = Fr / Mc
+		// u3 = Fline / Mpayload 
+		static double LineAccel(double Fline) { return Fline / Mpayload; }
+
+		// T1 = Ty / Mw
+		static constexpr double CartFrictionAccel = Ty / Mcart;
+		// T2 = Tx / (Mw + Mc)
+		static constexpr double RailFrictionAccel = Tx / Mcartpayload;
+		// T3 = Tr / Mc
+		static constexpr double LineFrictionAccel = Tr / Mpayload;
+
+		// N1 = u1 - T1
+		static double CartNetAccel(double Fcart) { return CartAccel(Fcart) - CartFrictionAccel; }
+		// N2 = u2 - T2
+		static double RailNetAccel(double Frail) { return RailAccel(Frail) - RailFrictionAccel; }
+		// N3 = u3 - T3
+		static double LineNetAccel(double Fline) { return LineAccel(Fline) - LineFrictionAccel; }
+
+		// s = S / Mc
+		static double LiftReactionAccel(double Sline) { return Sline / Mpayload; }
+
     };
 
 }

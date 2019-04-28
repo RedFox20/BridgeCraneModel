@@ -7,7 +7,7 @@ int main()
     using namespace crane3d;
 
     SimulationState initial;
-    Model craneModel {initial};
+    ModelOld craneModel {initial};
 
     double Fx = 0.0; // force driving the rail
     double Fy = 1.0; // force along the rail
