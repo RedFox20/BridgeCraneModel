@@ -40,8 +40,8 @@ namespace crane3d
         double Xw = 0.0; // distance of the rail with the cart from the center of the construction frame
         double Yw = 0.0; // distance of the cart from the center of the rail;
         double R = 0.0; // length of the lift-line
-        double Alfa = 0.0; // angle between y axis (cart moving left-right) and the lift-line
-        double Beta = 0.0; // angle between negative direction on the z axis and the projection
+        double Alfa = 0.0; // α angle between y axis (cart moving left-right) and the lift-line
+        double Beta = 0.0; // β angle between negative direction on the z axis and the projection
                            // of the lift-line onto the xz plane
 
 		// velocity time derivatives
@@ -51,11 +51,15 @@ namespace crane3d
 		double Alfa_vel = 0.0;
 		double Beta_vel = 0.0;
 
-		//double S = 0.0; // reaction force in the lift-line acting on the cart
+		// time between each step of the simulation
+		static constexpr double SimulationStep = 0.001;
+
+		// simulation time sink for running correct number of iterations every update
+		double SimulationTime = 0.0;
 
     public:
 
-        Model();
+        Model() = default;
 
         /**
          * @param deltaTime Time since last update
@@ -73,6 +77,8 @@ namespace crane3d
 		ModelState GetState() const;
 
     private:
+
+		void InternalStep(double Frail, double Fcart, double Fline);
 
 		// μ1 = Mc / Mw
 		static constexpr double PayloadCartRatio = Mpayload / Mcart;
