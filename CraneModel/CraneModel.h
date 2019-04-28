@@ -2,64 +2,28 @@
 
 namespace crane3d
 {
-    // @todo Reconstruct this using 3DCrane user manual physics model description
-    struct SimulationState
-    {
-        double XWOZEK = 0.0;
-        double VXWOZEK = 0.0;
-        double YWOZEK = 0.0;
-        double VYWOZEK = 0.0;
-        double ALFA = 0.0;
-        double VALFA = 0.0;
-        double BETA = 0.0;
-        double VBETA = 0.0;
-        double RLINKI = 0.0;
-        double VRLINKI = 0.0;
-        double SAMPLE_TIME_ARG = 0.0;
-        double Rstale = 0.0;
-    };
-
-    class ModelOld
-    {
-        SimulationState S;
-
-    public:
-
-        explicit ModelOld(const SimulationState& initialState);
-
-        SimulationState Get() const;
-
-        /**
-         * @param Fx force driving the rail with cart
-         * @param Fy force driving the cart along the rail
-         * @param Fr force controlling the length of the lift-line
-         */
-        SimulationState GetDerivative(double Fx, double Fy, double Fr) const;
-    };
-
-    struct Vec3d { double X, Y, Z; };
-
-    /**
-     * NEW model state passed to update
-     */
-    struct ModelParameters
-    {
-        double Alfa = 0.0; // α pendulum measured alfa angle
-        double Beta = 0.0; // β pendulum measured beta angle
-
-        double LiftLine = 0.0; // R new lift-line length
-        double OffsetX = 0.0;  // Xw distance of the rail with the cart from the center of the construction frame
-        double OffsetY = 0.0;  // Yw distance of the cart from the center of the rail
-    };
-
+	/**
+	 * Output state of the model
+	 */
 	struct ModelState
 	{
-		double x1 = 0.0, x2 = 0.0, x3 = 0.0, x4 = 0.0, x5 = 0.0;
-		double x6 = 0.0, x7 = 0.0, x8 = 0.0, x9 = 0.0, x10 = 0.0;
+		double Alfa = 0.0; // α pendulum measured alfa angle
+		double Beta = 0.0; // β pendulum measured beta angle
 
-		ModelState() = default;
+		double LiftLine = 0.0; // R lift-line length
+		double RailOffset = 0.0;  // Xw distance of the rail with the cart from the center of the construction frame
+		double CartOffset = 0.0;  // Yw distance of the cart from the center of the rail
+
+		// Payload 3D coordinates
+		double PayloadX = 0.0;
+		double PayloadY = 0.0;
+		double PayloadZ = 0.0;
 	};
 
+	// Coordinate system of the Crane model
+	// X: outermost movement of the rail, considered as forward
+	// Y: left-right movement of the cart
+	// Z: up-down movement of the payload
     class Model
     {
         static constexpr double Mpayload = 1.000; // Mc mass of the payload
@@ -68,25 +32,26 @@ namespace crane3d
         static constexpr double Mrailcart    = Mcart + Mrail;    // Mcart + Mrail    (Mw + Ms)
         static constexpr double Mcartpayload = Mcart + Mpayload; // Mcart + Mpayload (Mw + Mc)
 
-        // Coordinates of the payload
-        // X: outermost movement of the rail, considered as forward
-        // Y: left-right movement of the cart
-        // Z: up-down movement of the payload
-        Vec3d PayloadPos { 0.0, 0.0, 0.0 };
+		// Friction forces
+		static constexpr double Tx = 100.0; // rail friction
+		static constexpr double Ty = 82.0; // cart friction
+		static constexpr double Tr = 75.0; // liftline friction 
 
         double Xw = 0.0; // distance of the rail with the cart from the center of the construction frame
         double Yw = 0.0; // distance of the cart from the center of the rail;
-
         double R = 0.0; // length of the lift-line
-        double S = 0.0; // reaction force in the lift-line acting on the cart
         double Alfa = 0.0; // angle between y axis (cart moving left-right) and the lift-line
         double Beta = 0.0; // angle between negative direction on the z axis and the projection
                            // of the lift-line onto the xz plane
 
-        // Friction forces
-        static constexpr double Tx = 100.0; // rail friction
-        static constexpr double Ty = 82.0; // cart friction
-        static constexpr double Tr = 75.0; // liftline friction 
+		// velocity time derivatives
+		double Xw_vel = 0.0;
+		double Yw_vel = 0.0;
+		double R_vel = 0.0;
+		double Alfa_vel = 0.0;
+		double Beta_vel = 0.0;
+
+		//double S = 0.0; // reaction force in the lift-line acting on the cart
 
     public:
 
@@ -94,12 +59,18 @@ namespace crane3d
 
         /**
          * @param deltaTime Time since last update
-         * @param s current state of the model
          * @param Frail force driving the rail with cart (Fx)
          * @param Fcart force driving the cart along the rail (Fy)
          * @param Fline force controlling the length of the lift-line (Fr)
+         * @return New state of the crane model
          */
-        void Update(double deltaTime, const ModelState& s, double Frail, double Fcart, double Fline);
+		ModelState Update(double deltaTime, double Frail, double Fcart, double Fline);
+
+		/**
+		 * @return Current state of the crane:
+		 *  distance of the rail, cart, length of lift-line and swing angles of the payload
+		 */
+		ModelState GetState() const;
 
     private:
 

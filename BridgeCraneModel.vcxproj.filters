@@ -21,12 +21,18 @@
     <ClInclude Include="CraneModel\CraneModel.h">
       <Filter>src\CraneModel</Filter>
     </ClInclude>
+    <ClInclude Include="CraneModel\ModelOld.h">
+      <Filter>src\CraneModel</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="CraneModel\CraneModel.cpp">
+      <Filter>src\CraneModel</Filter>
+    </ClCompile>
+    <ClCompile Include="CraneModel\ModelOld.cpp">
       <Filter>src\CraneModel</Filter>
     </ClCompile>
   </ItemGroup>
