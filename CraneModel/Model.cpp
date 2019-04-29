@@ -102,8 +102,8 @@ namespace crane3d
 
 		for (int i = 0; i < iterations; ++i)
 		{
-			NonLinearConstantPendulum(Frail, Fcart);
-			//CompleteNonLinearModel(Frail, Fcart, Fline);
+			//NonLinearConstantPendulum(Frail, Fcart);
+			CompleteNonLinearModel(Frail, Fcart, Fline);
 		}
 
 		// and finally, return the observable current state
@@ -117,7 +117,7 @@ namespace crane3d
 		double x2 = Yw_vel; // velocity derivative of Yw
 		double x3 = Xw;
 		double x4 = Xw_vel;
-		double x5 = Alfa;
+		double x5 = (3.1415926 / 2) - Alfa;
 		double x6 = Alfa_vel;
 		double x7 = Beta;
 		double x8 = Beta_vel;
@@ -155,11 +155,12 @@ namespace crane3d
 		}
 
 		// map the derived state to the current internal state:
-		Yw = d1;
-		Xw = d3;
-		Alfa = d5;
-		Beta = d7;
-		Yw_vel = d2;
+		double dt = SimulationStep;
+		Yw += dt * d1;
+		Xw += dt * d3;
+		Alfa += dt * ((3.1415926 / 2) - d5);
+		Beta += dt * d7;
+		Yw_vel += d2;
 		Xw_vel = d4;
 		Alfa_vel = d6;
 		Beta_vel = d8;
@@ -174,7 +175,7 @@ namespace crane3d
 		double x2 = Yw_vel; // velocity derivative of Yw
 		double x3 = Xw;
 		double x4 = Xw_vel;
-		double x5 = Alfa;
+		double x5 = (3.1415926 / 2) - Alfa;
 		double x6 = Alfa_vel;
 		double x7 = Beta;
 		double x8 = Beta_vel;
@@ -237,18 +238,19 @@ namespace crane3d
 		d10 = c5*(x2 * T1 + Tsy * sign(x2)) - c5*un0 + x9 * s5*s5*x8 * x8 - un1 * s5*s7 + s5*c7*g - mi2 * s5*s5*s7*s7*un2 + mi2 * s5*s5*s7*s7*(-x10 * T3 - Tsz * sign(x10)) + (x4 * T2 + Tsx * sign(x4))*s5*s7 - mi1 * un2 + mi1 * un2 * s5*s5 + mi1 * (-x10 * T3 - Tsz * sign(x10)) - mi1 * (-x10 * T3 - Tsz * sign(x10))*s5*s5 + x9 * x6 * x6 - un2 - x10 * T3 - Tsz * sign(x10);
 
 		// map the derived state to the current internal state:
-		Yw   = d2;
-		Xw   = d4;
-		Alfa = d6;
-		Beta = d8;
-		R    = d10; // TODO: how to apply outputs?
-		Yw_vel   = d1;
-		Xw_vel   = d3;
-		Alfa_vel = d5;
-		Beta_vel = d7;
-		R_vel    = d9;
+		double dt = SimulationStep;
+		Yw   += dt * d1;
+		Xw   += dt * d3;
+		Alfa += dt * (d5);
+		Beta += dt * d7;
+		R += dt * d9; // TODO: how to apply outputs?
+		Yw_vel += dt * d2;
+		Xw_vel += dt * d4;
+		Alfa_vel += dt * d6;
+		Beta_vel += dt * d8;
+		R_vel += dt * d10;
 
-		DampenAllValues(); // this dampening prevents INFINITY or NAN errors
+		//DampenAllValues(); // this dampening prevents INFINITY or NAN errors
 	}
 
 	void Model::DampenAllValues()
