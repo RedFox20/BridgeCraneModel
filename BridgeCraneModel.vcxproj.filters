@@ -18,10 +18,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CraneModel\CraneModel.h">
+    <ClInclude Include="CraneModel\ModelOld.h">
       <Filter>src\CraneModel</Filter>
     </ClInclude>
-    <ClInclude Include="CraneModel\ModelOld.h">
+    <ClInclude Include="CraneModel\Model.h">
       <Filter>src\CraneModel</Filter>
     </ClInclude>
   </ItemGroup>
@@ -29,10 +29,10 @@
     <ClCompile Include="main.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="CraneModel\CraneModel.cpp">
+    <ClCompile Include="CraneModel\ModelOld.cpp">
       <Filter>src\CraneModel</Filter>
     </ClCompile>
-    <ClCompile Include="CraneModel\ModelOld.cpp">
+    <ClCompile Include="CraneModel\Model.cpp">
       <Filter>src\CraneModel</Filter>
     </ClCompile>
   </ItemGroup>
