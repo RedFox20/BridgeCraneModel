@@ -7,7 +7,7 @@ int main()
     using namespace crane3d;
 
     double Frail = 0.0; // force driving the rail
-    double Fcart = 0.1; // force along the rail
+    double Fcart = 0.0; // force along the rail
     double Fline = 0.0; // force driving the cable
 
 	Model model;

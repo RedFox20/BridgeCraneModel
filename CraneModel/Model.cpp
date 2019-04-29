@@ -68,6 +68,12 @@ namespace crane3d
 		return x + vel * deltaTime;
 	}
 
+	// dampen values that are very close to 0.0
+	constexpr double Dampen(double x)
+	{
+		return abs(x) < 0.0000001 ? 0.0 : x;
+	}
+
 	//////////////////////////////////////////////////////////////////////
 
 	ModelState Model::GetState() const
@@ -108,13 +114,13 @@ namespace crane3d
 	{
 		// x1..x8 as per 3DCrane mathematical model description
 		double x1 = Yw;
-		double x2 = VelocityDerivative(Yw, Yw_vel, SimulationStep); // velocity derivative of Yw
+		double x2 = Yw_vel; // velocity derivative of Yw
 		double x3 = Xw;
-		double x4 = VelocityDerivative(Xw, Xw_vel, SimulationStep);
+		double x4 = Xw_vel;
 		double x5 = Alfa;
-		double x6 = VelocityDerivative(Alfa, Alfa_vel, SimulationStep);
+		double x6 = Alfa_vel;
 		double x7 = Beta;
-		double x8 = VelocityDerivative(Beta, Beta_vel, SimulationStep);
+		double x8 = Beta_vel;
 
 		// NOTE: variable names left exactly the same as the original math. model descr.
 		constexpr double g = 9.81; // gravity constant, 9.81m/s^2
@@ -144,8 +150,9 @@ namespace crane3d
 		double d6 = ((1 + μ2*s7*s7)*s5*N1 - B*c5*s7*N2 + V3) / (R*A);
 		double d7 = x8;
 		double d8 = 0.0; // if s5 is 0.0, then there is no Beta velocity
-		if (abs(s5) > 0.000001)
-			d8 = (μ2*c5*s5*c7*s7*N1 - (B - μ1*s5*s5)*c7*N2 - V4) / (R*A*s5);
+		if (abs(s5) > 0.000001) {
+			d8 = (μ2*c5*s5*c7*s7*N1 - (B - μ1 * s5*s5)*c7*N2 - V4) / (R*A*s5);
+		}
 
 		// map the derived state to the current internal state:
 		Yw = d1;
@@ -156,6 +163,8 @@ namespace crane3d
 		Xw_vel = d4;
 		Alfa_vel = d6;
 		Beta_vel = d8;
+
+		DampenAllValues(); // this dampening prevents INFINITY or NAN errors
 	}
 
 	void Model::CompleteNonLinearModel(double Frail, double Fcart, double Fline)
@@ -189,41 +198,43 @@ namespace crane3d
 		double μ2 = PayloadRailCartRatio;
 
 		// derived x1..x10 as per 3DCrane mathematical model description
-		double d1 = x2;
-		double d2 = N1 + μ1 * c5 * N3;
-		double d3 = x4;
-		double d4 = N2 + μ2 * s5 * s7 * N3;
-		double d5 = x6;
-		double d6 = (s5 * N1 - c5 * s7 * N2 + (μ1 - μ2 * s7*s7) * c5*s5*N3 * V5) / x9;
-		double d7 = x8;
-		double d8 = 0.0; // if s5 is 0.0, then there is no Beta velocity
-		if (abs(s5) > 0.000001)
-			d8 = -(c7*N2 + μ2 * s5*c7*s7*N3 + V6) / (s5*x9);
-		double d9 = x10;
-		double d10 = -c5 * N1 - s5 * s7*N2 - (1 + μ1 * c5*c5 + μ2 * s5*s5*s7*s7)*N3 + V7;
+		double d1, d2, d3, d4, d5, d6, d7, d8, d9, d10;
+		//d1 = x2;
+		//d2 = N1 + μ1 * c5 * N3;
+		//d3 = x4;
+		//d4 = N2 + μ2 * s5 * s7 * N3;
+		//d5 = x6;
+		//d6 = (s5 * N1 - c5 * s7 * N2 + (μ1 - μ2 * s7*s7) * c5*s5*N3 * V5) / x9;
+		//d7 = x8;
+		//d8 = 0.0; // if s5 is 0.0, then there is no Beta velocity
+		//if (abs(s5) > 0.000001) {
+		//	d8 = -(c7*N2 + μ2 * s5*c7*s7*N3 + V6) / (s5*x9);
+		//}
+		//d9 = x10;
+		//d10 = -c5 * N1 - s5 * s7*N2 - (1 + μ1 * c5*c5 + μ2 * s5*s5*s7*s7)*N3 + V7;
 
 		// original model:
-		//double un0 = Frail / Mcart;
-		//double un1 = Fcart / (Mcart + Mpayload);
-		//double un2 = Fline / Mpayload;
-		//double Tsx = 5 / (Mcart + Mrail);
-		//double Tsy = 7.5 / Mcart;
-		//double Tsz = 10 / Mpayload;
-		//double T1 = CartFrictionAccel;
-		//double T2 = RailFrictionAccel;
-		//double T3 = LineFrictionAccel;
-		//double mi1 = Mpayload / Mcart;
-		//double mi2 = Mpayload / (Mcart + Mrail);
-		//d1 = x2;
-		//d2 = un0 - x2 * T1 - Tsy * sign(x2) + mi1 * c5*un2 - mi1 * c5*(-x10 * T3 - Tsz * sign(x10));
-		//d3 = x4;
-		//d4 = un1 - x4 * T2 - Tsx * sign(x4) + mi2 * s5*s7*un2 - mi2 * s5*s7*(-x10 * T3 - Tsz * sign(x10));
-		//d5 = x6;
-		//d6 = (-(x2 * T1 + Tsy * sign(x2))*s5 + un0 * s5 + c5*x9 * s5*x8 * x8 - c5*un1 * s7 + c5*c7*g - c5*mi2*s5*s7*s7*un2 + c5*mi2*s5*s7*s7*(-x10 * T3 - Tsz * sign(x10)) + c5*(x4 * T2 + Tsx * sign(x4))*s7 + c5*mi1*un2 * s5 - c5*mi1*(-x10 * T3 - Tsz * sign(x10))*s5 - 2 * x10 * x6) / x9;
-		//d7 = x8;
-		//d8 = -(c7*un1 + g * s7 + 2 * x9 * c5*x6 * x8 + c7*mi2*s5*s7*un2 - c7*mi2*s5*s7*(-x10 * T3 - Tsz * sign(x10)) + 2 * x10 * s5*x8 - c7*(x4 * T2 + Tsx * sign(x4))) / (x9 * s5);
-		//d9 = x10;
-		//d10 = c5*(x2 * T1 + Tsy * sign(x2)) - c5*un0 + x9 * s5*s5*x8 * x8 - un1 * s5*s7 + s5*c7*g - mi2 * s5*s5*s7*s7*un2 + mi2 * s5*s5*s7*s7*(-x10 * T3 - Tsz * sign(x10)) + (x4 * T2 + Tsx * sign(x4))*s5*s7 - mi1 * un2 + mi1 * un2 * s5*s5 + mi1 * (-x10 * T3 - Tsz * sign(x10)) - mi1 * (-x10 * T3 - Tsz * sign(x10))*s5*s5 + x9 * x6 * x6 - un2 - x10 * T3 - Tsz * sign(x10);
+		double un0 = Frail / Mcart;
+		double un1 = Fcart / (Mcart + Mpayload);
+		double un2 = Fline / Mpayload;
+		double Tsx = 5 / (Mcart + Mrail);
+		double Tsy = 7.5 / Mcart;
+		double Tsz = 10 / Mpayload;
+		double T1 = CartFrictionAccel;
+		double T2 = RailFrictionAccel;
+		double T3 = LineFrictionAccel;
+		double mi1 = Mpayload / Mcart;
+		double mi2 = Mpayload / (Mcart + Mrail);
+		d1 = x2;
+		d2 = un0 - x2 * T1 - Tsy * sign(x2) + mi1 * c5*un2 - mi1 * c5*(-x10 * T3 - Tsz * sign(x10));
+		d3 = x4;
+		d4 = un1 - x4 * T2 - Tsx * sign(x4) + mi2 * s5*s7*un2 - mi2 * s5*s7*(-x10 * T3 - Tsz * sign(x10));
+		d5 = x6;
+		d6 = (-(x2 * T1 + Tsy * sign(x2))*s5 + un0 * s5 + c5*x9 * s5*x8 * x8 - c5*un1 * s7 + c5*c7*g - c5*mi2*s5*s7*s7*un2 + c5*mi2*s5*s7*s7*(-x10 * T3 - Tsz * sign(x10)) + c5*(x4 * T2 + Tsx * sign(x4))*s7 + c5*mi1*un2 * s5 - c5*mi1*(-x10 * T3 - Tsz * sign(x10))*s5 - 2 * x10 * x6) / x9;
+		d7 = x8;
+		d8 = -(c7*un1 + g * s7 + 2 * x9 * c5*x6 * x8 + c7*mi2*s5*s7*un2 - c7*mi2*s5*s7*(-x10 * T3 - Tsz * sign(x10)) + 2 * x10 * s5*x8 - c7*(x4 * T2 + Tsx * sign(x4))) / (x9 * s5);
+		d9 = x10;
+		d10 = c5*(x2 * T1 + Tsy * sign(x2)) - c5*un0 + x9 * s5*s5*x8 * x8 - un1 * s5*s7 + s5*c7*g - mi2 * s5*s5*s7*s7*un2 + mi2 * s5*s5*s7*s7*(-x10 * T3 - Tsz * sign(x10)) + (x4 * T2 + Tsx * sign(x4))*s5*s7 - mi1 * un2 + mi1 * un2 * s5*s5 + mi1 * (-x10 * T3 - Tsz * sign(x10)) - mi1 * (-x10 * T3 - Tsz * sign(x10))*s5*s5 + x9 * x6 * x6 - un2 - x10 * T3 - Tsz * sign(x10);
 
 		// map the derived state to the current internal state:
 		Yw   = d2;
@@ -236,6 +247,23 @@ namespace crane3d
 		Alfa_vel = d5;
 		Beta_vel = d7;
 		R_vel    = d9;
+
+		DampenAllValues(); // this dampening prevents INFINITY or NAN errors
+	}
+
+	void Model::DampenAllValues()
+	{
+		Yw = Dampen(Yw);
+		Xw = Dampen(Xw);
+		Alfa = Dampen(Alfa);
+		Beta = Dampen(Beta);
+		R = Dampen(R);
+
+		Yw_vel = Dampen(Yw_vel);
+		Xw_vel = Dampen(Xw_vel);
+		Alfa_vel = Dampen(Alfa_vel);
+		Beta_vel = Dampen(Beta_vel);
+		R_vel = Dampen(R_vel);
 	}
 
 	//////////////////////////////////////////////////////////////////////

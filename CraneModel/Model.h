@@ -72,6 +72,8 @@ namespace crane3d
 		void NonLinearConstantPendulum(double Frail, double Fcart);
 
 		void CompleteNonLinearModel(double Frail, double Fcart, double Fline);
+
+		void DampenAllValues();
 	};
 
 }
